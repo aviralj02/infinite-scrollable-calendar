@@ -1,5 +1,11 @@
+import Calendar from "./components/Calendar";
+
 function App() {
-  return <div>Infinite Scroll Calendar</div>;
+  return (
+    <div>
+      <Calendar />
+    </div>
+  );
 }
 
 export default App;
