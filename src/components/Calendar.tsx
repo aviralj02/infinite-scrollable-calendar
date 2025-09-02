@@ -1,124 +1,28 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { DAY_TILE_HEIGHT, dayNames, monthNames } from "../lib/constants";
 import { RotateCcw } from "lucide-react";
 import { getISODate } from "../lib/utils";
+import { useInfiniteCalendar } from "../hooks/useInfiniteCalendar";
 
 const Calendar: React.FC = () => {
-  const today = new Date();
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const today = useMemo(() => new Date(), []);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const dayRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 300 });
-  const lastScrollTime = useRef<number>(0);
-
-  const allDays = useMemo(() => {
-    const days: Array<CalendarDay> = [];
-    const todayStr = getISODate(today);
-
-    const startDate = new Date(today.getFullYear() - 3, 0, 1);
-    const endDate = new Date(today.getFullYear() + 2, 11, 31);
-
-    // Start from the Sunday before the first day of the start month
-    const firstDayOfStartMonth = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      1
-    );
-    const startDayOfWeek = firstDayOfStartMonth.getDay();
-    const calendarStart = new Date(firstDayOfStartMonth);
-    calendarStart.setDate(calendarStart.getDate() - startDayOfWeek);
-
-    const current = new Date(calendarStart);
-    while (current <= endDate) {
-      const dateKey = getISODate(current);
-
-      days.push({
-        date: new Date(current),
-        dayNumber: current.getDate(),
-        month: current.getMonth(),
-        year: current.getFullYear(),
-        isToday: dateKey === todayStr,
-      });
-
-      current.setDate(current.getDate() + 1);
-    }
-
-    return days;
-  }, [today]);
+  const {
+    currentMonth,
+    currentYear,
+    daysArray,
+    scrollContainerRef,
+    scrollToDate,
+    visibleRange,
+    setCurrentMonth,
+    setCurrentYear,
+  } = useInfiniteCalendar(today);
 
   const todayIndex = useMemo(() => {
-    return allDays.findIndex(
+    return daysArray.findIndex(
       (day) => getISODate(day.date) === getISODate(today)
     );
-  }, [allDays, today]);
-
-  const handleScroll = useCallback(() => {
-    const now = Date.now();
-    if (now - lastScrollTime.current < 64) return; // ~60fps throttle
-    lastScrollTime.current = now;
-
-    if (!scrollContainerRef.current) return;
-
-    const container = scrollContainerRef.current;
-    const scrollTop = container.scrollTop;
-    const containerHeight = container.clientHeight;
-    const dayHeight = DAY_TILE_HEIGHT;
-    const itemsPerRow = 7;
-
-    // --- Virtualization range ---
-    const buffer = 20; // buffer in rows
-    const rowsVisible = Math.ceil(containerHeight / dayHeight);
-    const startRow = Math.max(0, Math.floor(scrollTop / dayHeight) - buffer);
-    const endRow = Math.min(
-      Math.ceil(allDays.length / itemsPerRow),
-      Math.ceil((scrollTop + containerHeight) / dayHeight) + buffer
-    );
-
-    const start = startRow * itemsPerRow;
-    const end = Math.min(allDays.length, endRow * itemsPerRow);
-    setVisibleRange({ start, end });
-
-    // --- Update header month ---
-    requestAnimationFrame(() => {
-      const middleRow =
-        Math.floor(scrollTop / dayHeight) + Math.floor(rowsVisible / 2);
-      const middleIndex = middleRow * itemsPerRow + 3;
-      if (middleIndex >= 0 && middleIndex < allDays.length) {
-        const midDay = allDays[middleIndex];
-        if (midDay.month !== currentMonth || midDay.year !== currentYear) {
-          setCurrentMonth(midDay.month);
-          setCurrentYear(midDay.year);
-        }
-      }
-    });
-  }, [allDays, currentMonth, currentYear]);
-
-  const scrollToDate = useCallback(
-    (targetDate: Date) => {
-      if (!scrollContainerRef.current) return;
-
-      const dateKey = getISODate(targetDate);
-      const dayIndex = allDays.findIndex(
-        (day) => getISODate(day.date) === dateKey
-      );
-
-      if (dayIndex === -1) return;
-
-      const container = scrollContainerRef.current;
-      const containerHeight = container.clientHeight;
-
-      const rowIndex = Math.floor(dayIndex / 7);
-      const scrollPosition = rowIndex * DAY_TILE_HEIGHT - containerHeight / 3;
-
-      container.scrollTo({
-        top: Math.max(0, scrollPosition),
-        behavior: "smooth",
-      });
-    },
-    [allDays]
-  );
+  }, [daysArray, today]);
 
   const resetToToday = useCallback(() => {
     setCurrentMonth(today.getMonth());
@@ -134,7 +38,7 @@ const Calendar: React.FC = () => {
     return weeks;
   };
 
-  const visibleDays = allDays.slice(visibleRange.start, visibleRange.end);
+  const visibleDays = daysArray.slice(visibleRange.start, visibleRange.end);
   const weeks = groupDaysIntoWeeks(visibleDays);
 
   useEffect(() => {
@@ -146,16 +50,6 @@ const Calendar: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [handleScroll]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -227,13 +121,6 @@ const Calendar: React.FC = () => {
                   return (
                     <div
                       key={dateKey}
-                      ref={(el) => {
-                        if (el) {
-                          dayRefs.current.set(dateKey, el);
-                        } else {
-                          dayRefs.current.delete(dateKey);
-                        }
-                      }}
                       className={`
                         min-h-[${DAY_TILE_HEIGHT}px] border border-gray-200 bg-white rounded-lg p-2
                         transition-all duration-200
@@ -273,11 +160,11 @@ const Calendar: React.FC = () => {
         </div>
 
         {/* VIRTUAL SPACE */}
-        {visibleRange.end < allDays.length && (
+        {visibleRange.end < daysArray.length && (
           <div
             style={{
               height: `${
-                Math.floor((allDays.length - visibleRange.end) / 7) *
+                Math.floor((daysArray.length - visibleRange.end) / 7) *
                 DAY_TILE_HEIGHT
               }px`,
             }}

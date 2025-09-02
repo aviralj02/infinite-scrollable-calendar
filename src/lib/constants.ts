@@ -1,4 +1,5 @@
 export const DAY_TILE_HEIGHT = 120 as const;
+export const DAYS_PER_ROW = 7 as const;
 
 export const monthNames = [
   "January",
