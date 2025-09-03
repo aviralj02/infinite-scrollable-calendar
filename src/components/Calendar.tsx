@@ -2,6 +2,7 @@ import { DAY_TILE_HEIGHT, dayNames, monthNames } from "../lib/constants";
 import { RotateCcw } from "lucide-react";
 import { getISODate } from "../lib/utils";
 import { useInfiniteCalendar } from "../hooks/useInfiniteCalendar";
+import { useMemo } from "react";
 
 const Calendar: React.FC = () => {
   const today = new Date();
@@ -15,7 +16,7 @@ const Calendar: React.FC = () => {
     resetToToday,
   } = useInfiniteCalendar(today);
 
-  const groupDaysIntoWeeks = (days: Array<CalendarDay>) => {
+  const groupDaysIntoWeeks = (days: CalendarDay[]) => {
     const weeks = [];
     for (let i = 0; i < days.length; i += 7) {
       weeks.push(days.slice(i, i + 7));
@@ -23,8 +24,25 @@ const Calendar: React.FC = () => {
     return weeks;
   };
 
-  const visibleDays = daysArray.slice(visibleRange.start, visibleRange.end);
-  const weeks = groupDaysIntoWeeks(visibleDays);
+  const visibleDays = useMemo(() => {
+    return daysArray.slice(visibleRange.start, visibleRange.end);
+  }, [daysArray, visibleRange]);
+
+  const weeks = useMemo(() => {
+    return groupDaysIntoWeeks(visibleDays);
+  }, [visibleDays]);
+
+  const virtualTopHeight = useMemo(() => {
+    return visibleRange.start > 0
+      ? Math.floor(visibleRange.start / 7) * DAY_TILE_HEIGHT
+      : 0;
+  }, [visibleRange.start]);
+
+  const virtualBottomHeight = useMemo(() => {
+    return visibleRange.end < daysArray.length
+      ? Math.floor((daysArray.length - visibleRange.end) / 7) * DAY_TILE_HEIGHT
+      : 0;
+  }, [visibleRange.end, daysArray.length]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -67,15 +85,9 @@ const Calendar: React.FC = () => {
         className="flex-1 overflow-y-auto"
         style={{ height: "calc(100vh - 146px)" }}
       >
-        {/* VIRTUAL SPACE */}
-        {visibleRange.start > 0 && (
-          <div
-            style={{
-              height: `${
-                Math.floor(visibleRange.start / 7) * DAY_TILE_HEIGHT
-              }px`,
-            }}
-          />
+        {/* Virtual Space Top */}
+        {virtualTopHeight > 0 && (
+          <div style={{ height: `${virtualTopHeight}px` }} />
         )}
 
         <div className="px-4 sm:px-6">
@@ -85,7 +97,7 @@ const Calendar: React.FC = () => {
 
             return (
               <div
-                key={actualWeekIndex}
+                key={`week-${actualWeekIndex}`}
                 className="grid grid-cols-7 gap-1 mb-1"
               >
                 {week.map((day) => {
@@ -137,16 +149,9 @@ const Calendar: React.FC = () => {
           })}
         </div>
 
-        {/* VIRTUAL SPACE */}
-        {visibleRange.end < daysArray.length && (
-          <div
-            style={{
-              height: `${
-                Math.floor((daysArray.length - visibleRange.end) / 7) *
-                DAY_TILE_HEIGHT
-              }px`,
-            }}
-          />
+        {/* Virtual Space Bottom */}
+        {virtualBottomHeight > 0 && (
+          <div style={{ height: `${virtualBottomHeight}px` }} />
         )}
       </div>
     </div>
