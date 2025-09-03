@@ -10,12 +10,17 @@ interface CalendarDay {
   isToday: boolean;
 }
 
+const INITIAL_DAYS = 70;
+
 export function useInfiniteCalendar(today: Date) {
   const [daysMap, setDaysMap] = useState<Map<string, CalendarDay>>(new Map());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 21 }); // initial 3 rows
+  const [visibleRange, setVisibleRange] = useState({
+    start: 0,
+    end: INITIAL_DAYS,
+  });
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isScrollingToDate = useRef(false);
@@ -50,7 +55,7 @@ export function useInfiniteCalendar(today: Date) {
       }
       return days;
     },
-    []
+    [today]
   );
 
   const handleScroll = useCallback(() => {
@@ -109,8 +114,8 @@ export function useInfiniteCalendar(today: Date) {
     if (!firstDay) return;
 
     const start = new Date(firstDay.date);
-    start.setDate(start.getDate() - 21);
-    const newDays = generateDays(start, 21);
+    start.setDate(start.getDate() - INITIAL_DAYS);
+    const newDays = generateDays(start, INITIAL_DAYS);
     if (newDays.length === 0) return;
 
     setDaysMap((prev) => {
@@ -137,7 +142,7 @@ export function useInfiniteCalendar(today: Date) {
 
     const start = new Date(lastDay.date);
     start.setDate(start.getDate() + 1);
-    const newDays = generateDays(start, 21);
+    const newDays = generateDays(start, INITIAL_DAYS);
     if (newDays.length === 0) return;
 
     setDaysMap((prev) => {
@@ -157,7 +162,7 @@ export function useInfiniteCalendar(today: Date) {
       );
 
       if (dayIndex === -1) {
-        const newDays = generateDays(targetDate, 21);
+        const newDays = generateDays(targetDate, INITIAL_DAYS);
         const newMap = new Map(daysMap);
         newDays.forEach((d) => newMap.set(getISODate(d.date), d));
         setDaysMap(newMap);
@@ -186,16 +191,33 @@ export function useInfiniteCalendar(today: Date) {
     [daysMap, generateDays]
   );
 
+  const resetToToday = useCallback(() => {
+    setCurrentMonth(today.getMonth());
+    setCurrentYear(today.getFullYear());
+    scrollToDate(today);
+  }, [scrollToDate, today]);
+
   useEffect(() => {
     const startOfWeek = getStartOfWeek(today);
-    const todayDays = generateDays(startOfWeek, 21); // initial 3 rows
+    const todayDays = generateDays(startOfWeek, INITIAL_DAYS);
 
-    const newMap = new Map(daysMap);
+    setDaysMap((prev) => {
+      const newMap = new Map(prev);
+      todayDays.forEach((d) => newMap.set(getISODate(d.date), d));
 
-    todayDays.forEach((d) => newMap.set(getISODate(d.date), d));
-    setDaysMap(newMap);
-  }, []); // HERE IS PROBLEM NOT WORKING
+      return newMap;
+    });
+  }, [generateDays, today]);
 
+  useEffect(() => {
+    if (daysMap.size === 0) return;
+
+    const timer = setTimeout(() => {
+      scrollToDate(today);
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [daysMap, scrollToDate, today]);
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -209,11 +231,12 @@ export function useInfiniteCalendar(today: Date) {
   return {
     scrollContainerRef,
     visibleRange,
-    daysArray: Array.from(daysMap.values()),
+    daysArray: Array.from(daysMap.values()).sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    ),
     currentMonth,
     currentYear,
     scrollToDate,
-    setCurrentMonth,
-    setCurrentYear,
+    resetToToday,
   };
 }

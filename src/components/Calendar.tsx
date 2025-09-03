@@ -1,34 +1,19 @@
-import { useEffect, useCallback, useMemo } from "react";
 import { DAY_TILE_HEIGHT, dayNames, monthNames } from "../lib/constants";
 import { RotateCcw } from "lucide-react";
 import { getISODate } from "../lib/utils";
 import { useInfiniteCalendar } from "../hooks/useInfiniteCalendar";
 
 const Calendar: React.FC = () => {
-  const today = useMemo(() => new Date(), []);
+  const today = new Date();
 
   const {
     currentMonth,
     currentYear,
     daysArray,
     scrollContainerRef,
-    scrollToDate,
     visibleRange,
-    setCurrentMonth,
-    setCurrentYear,
+    resetToToday,
   } = useInfiniteCalendar(today);
-
-  const todayIndex = useMemo(() => {
-    return daysArray.findIndex(
-      (day) => getISODate(day.date) === getISODate(today)
-    );
-  }, [daysArray, today]);
-
-  const resetToToday = useCallback(() => {
-    setCurrentMonth(today.getMonth());
-    setCurrentYear(today.getFullYear());
-    scrollToDate(today);
-  }, [scrollToDate, today]);
 
   const groupDaysIntoWeeks = (days: Array<CalendarDay>) => {
     const weeks = [];
@@ -40,16 +25,6 @@ const Calendar: React.FC = () => {
 
   const visibleDays = daysArray.slice(visibleRange.start, visibleRange.end);
   const weeks = groupDaysIntoWeeks(visibleDays);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (todayIndex !== -1) {
-        scrollToDate(today);
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -122,12 +97,15 @@ const Calendar: React.FC = () => {
                     <div
                       key={dateKey}
                       className={`
-                        min-h-[${DAY_TILE_HEIGHT}px] border border-gray-200 bg-white rounded-lg p-2
+                        border border-gray-200 bg-white rounded-lg p-2
                         transition-all duration-200
                         ${day.isToday ? "ring-2 ring-blue-500 bg-blue-50" : ""}
                         ${!isCurrentMonthDay ? "opacity-40" : ""}
                         hover:shadow-sm cursor-pointer
                       `}
+                      style={{
+                        minHeight: `${DAY_TILE_HEIGHT}px`,
+                      }}
                     >
                       <div
                         className={`
