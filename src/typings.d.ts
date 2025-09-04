@@ -4,5 +4,12 @@ interface CalendarDay {
   month: number;
   year: number;
   isToday: boolean;
-  isCurrentMonth?: boolean;
+}
+
+interface Journal {
+  imgUrl: string;
+  rating: number;
+  categories: Array<string>;
+  date: string;
+  description: string;
 }

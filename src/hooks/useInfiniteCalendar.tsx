@@ -24,8 +24,8 @@ export function useInfiniteCalendar(today: Date) {
   const todayStr = useMemo(() => getISODate(today), [today]);
 
   const generateDays = useCallback(
-    (start: Date, count: number): CalendarDay[] => {
-      const days: CalendarDay[] = [];
+    (start: Date, count: number): Array<CalendarDay> => {
+      const days: Array<CalendarDay> = [];
       const date = new Date(start);
 
       for (let i = 0; i < count; i++) {
@@ -107,15 +107,14 @@ export function useInfiniteCalendar(today: Date) {
     const totalRows = Math.ceil(daysArray.length / DAYS_PER_ROW);
 
     // --- Virtualization range ---
-    const buffer = 10;
     const rowsVisible = Math.ceil(containerHeight / DAY_TILE_HEIGHT);
     const startRow = Math.max(
       0,
-      Math.floor(scrollTop / DAY_TILE_HEIGHT) - buffer
+      Math.floor(scrollTop / DAY_TILE_HEIGHT) - BUFFER_DAYS
     );
     const endRow = Math.min(
       totalRows,
-      Math.ceil((scrollTop + containerHeight) / DAY_TILE_HEIGHT) + buffer
+      Math.ceil((scrollTop + containerHeight) / DAY_TILE_HEIGHT) + BUFFER_DAYS
     );
 
     setVisibleRange({
@@ -252,7 +251,6 @@ export function useInfiniteCalendar(today: Date) {
     daysArray,
     currentMonth,
     currentYear,
-    scrollToDate,
     resetToToday,
   };
 }
