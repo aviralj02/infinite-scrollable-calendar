@@ -31,8 +31,11 @@ const JournalOverlay = ({ journal, dateKey }: Props) => {
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`w-2.5 h-2.5 text-white`}
-            fill={`${i < journal.rating ? "#4d90ff" : "#b4c1d6"}`}
+            className={`w-2.5 h-2.5 ${
+              i < journal.rating
+                ? "text-[#4d90ff] fill-current"
+                : "text-[#b4c1d6]"
+            }`}
           />
         ))}
       </div>

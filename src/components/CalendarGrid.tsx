@@ -13,6 +13,7 @@ type Props = {
     start: number;
     end: number;
   };
+  openModalForSelectedJournal: (index: number) => void;
 };
 
 const CalendarGrid = ({
@@ -21,11 +22,21 @@ const CalendarGrid = ({
   daysArray,
   scrollContainerRef,
   visibleRange,
+  openModalForSelectedJournal,
 }: Props) => {
-  const { getJournalForDate } = useJournals();
+  const { getJournalForDate, getJournalIndex } = useJournals();
 
   const handleDayClick = (day: CalendarDay) => () => {
-    console.log("modal open for" + day);
+    const dateStr = getISODate(day.date);
+    const journal = getJournalForDate(dateStr);
+
+    if (journal) {
+      const index = getJournalIndex(dateStr);
+
+      if (index !== -1) {
+        openModalForSelectedJournal(index);
+      }
+    }
   };
 
   const groupDaysIntoWeeks = (days: CalendarDay[]) => {

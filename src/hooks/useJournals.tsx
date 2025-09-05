@@ -21,7 +21,22 @@ export function useJournals() {
     return journalsByDate.get(date);
   };
 
+  const getAllJournals = (): Array<Journal> => {
+    return mockJournals.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+  };
+
+  const getJournalIndex = (date: string): number => {
+    const allJournals = getAllJournals();
+    return allJournals.findIndex(
+      (journal) => getISODate(parseDDMMYYYY(journal.date)) === date
+    );
+  };
+
   return {
     getJournalForDate,
+    getAllJournals,
+    getJournalIndex,
   };
 }
