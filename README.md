@@ -8,7 +8,6 @@ A simple infinite scrollable calendar with journal entries.
 
 - React.js
 - Tailwind CSS
-- Framer Motion (for animations)
 
 ### 🦋 Local Setup and Installation
 
