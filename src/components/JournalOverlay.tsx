@@ -1,12 +1,12 @@
 import { Loader2, Star } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 
 type Props = {
   journal: Journal;
   dateKey: string;
 };
 
-const JournalOverlay = ({ journal, dateKey }: Props) => {
+const JournalOverlayComponent = ({ journal, dateKey }: Props) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   return (
@@ -22,6 +22,7 @@ const JournalOverlay = ({ journal, dateKey }: Props) => {
         alt={`Journal for ${dateKey}`}
         className="w-[200px] sm:h-[120px] h-[90px] object-cover opacity-80 hover:opacity-100 transition-opacity duration-200"
         loading="lazy"
+        decoding="async"
         onLoad={() => setIsLoaded(true)}
       />
 
@@ -43,4 +44,5 @@ const JournalOverlay = ({ journal, dateKey }: Props) => {
   );
 };
 
+const JournalOverlay = memo(JournalOverlayComponent);
 export default JournalOverlay;
